@@ -1,0 +1,9 @@
+# Client Toolchain
+Build repo thats meant to package up all the necessary client .deb files.
+
+Currently builds:
+
+    * virt-viewer (neverware flavor)
+    * spice-gtk-0.24 (standard)
+
+We have scripts to build the above in the "build_scripts" repo.  This probably isn't the best approach, since these repositories should be able to build themselves (that way we can upgrade their build methodology and not have to update their build scripts to go along with them).  However, since we dont forsee needing to make any build modifications to these packages, we're keeping them here for now.

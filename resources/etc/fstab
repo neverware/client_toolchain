@@ -1,0 +1,5 @@
+/proc /var/chroot/hardy/proc none rbind 0 0 # Can just be mounted, comments?
+/dev /var/chroot/hardy/dev none rbind 0 0 # Good thing to do, but not secure.
+/sys /var/chroot/hardy/sys none rbind 0 0 # Same as proc?
+/tmp /var/chroot/hardy/tmp none rbind 0 0 # This opens a lot of doors, namly X sockets are here... DRI should work assuming bits match.
+/var/run/dbus/ /var/chroot/hardy/var/run/dbus/ none rbind 0 0 # Gnome likes this.
