@@ -10,7 +10,7 @@ fi
 
 if [ -z $2 ]
 then
-    PREFIX=/opt/neverware/client_debs
+    PREFIX=/opt/client_debs
     echo No prefix provided
 else
     PREFIX=$2

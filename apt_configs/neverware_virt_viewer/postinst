@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Post install script for the neverware_virt_viewer deb package
+
+add_to_pulse_access() {
+    gpasswd --add root pulse-access
+    gpasswd --add neverware pulse-access
+}
+
+add_to_pulse_access

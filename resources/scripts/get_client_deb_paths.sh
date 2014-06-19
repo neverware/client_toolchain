@@ -14,7 +14,8 @@ else
 fi
 echo Using dest file${DOWNLOAD_FILE}
 
-PKG_LIST="libspice-protocol-dev libspice-client-gtk-2.0-dev libpixman-1-dev libssl-dev libgtk2.0-dev libsoup2.4-dev pulseaudio libpulse-dev libjpeg-dev libusb-1.0-0-dev libusbredirhost-dev sl"
+PKG_LIST=`cat dependencies.list`
+echo $PKG_LIST
 
 apt-get update
 

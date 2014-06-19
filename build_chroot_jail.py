@@ -8,8 +8,10 @@ import getpass
 import os
 import platform
 import shutil
+import stat
 import subprocess
 import sys
+import tarfile
 import tempfile
 
 class Builder(object):
@@ -21,8 +23,9 @@ class Builder(object):
         * spice-gtk
     Its probably a good idea to roll juiceclient into here as well.
     """
-    def __init__(self):
+    def __init__(self, prefix):
         # This will get the directory this file resides in
+        self._prefix = prefix
         self._curdir = os.path.abspath(os.path.dirname(__file__))
         # The *_name is the relative name of the dir
         self._resources_dir_name = "resources"
@@ -150,39 +153,120 @@ class Builder(object):
             print("Could not find {0}, making new chroot jail".format(chroot_dir))
             self.make_chroot_jail(chroot_dir)
 
-    def build_spice_gtk(self, chroot_dir, build_prefix):
+    def build_spice_gtk(self, chroot_dir):
         """
         Creates a chroot jail (if it doesn't find one) and builds/packages up spice-gtk
         """
         self._make_chroot_if_necessary(chroot_dir)
         build_spice = os.path.join("/", self._build_scripts_dir_name, "build_spice_gtk_0.24.sh")
         cmd = ["chroot", chroot_dir, build_spice]
-        if build_prefix != None:
-            cmd.append(build_prefix)
+        if self._prefix != None:
+            cmd.append(self._prefix)
         subprocess.check_call(cmd)
 
-    def build_virt_viewer(self, chroot_dir, build_prefix):
+    def build_virt_viewer(self, chroot_dir):
         """
         Packages up the virt_viewer app
         """
         self._make_chroot_if_necessary(chroot_dir)
         build_virt_viewer = os.path.join("/", self._build_scripts_dir_name, "build_virt_viewer_0.6.0.sh")
         cmd = ["chroot", chroot_dir, build_virt_viewer]
-        if build_prefix != None:
-            cmd.append(build_prefix)
+        if self._prefix != None:
+            cmd.append(self._prefix)
         subprocess.check_call(cmd)
 
-    def build_client_debs(self, chroot_dir, build_prefix):
+    def build_client_debs(self, chroot_dir):
         self._make_chroot_if_necessary(chroot_dir)
         get_debs = os.path.join("/", self._resources_dir_name, "scripts", "download_client_debs.sh")
         download_list = os.path.join("/", self._resources_dir_name, "downloads.list")
         cmd = ["chroot", chroot_dir, get_debs, download_list]
-        if build_prefix != None:
-            cmd.append(build_prefix)
+        if self._prefix != None:
+            cmd.append(self._prefix)
         subprocess.check_call(cmd)
 
-    def build_neverware_virt_viewer_deb(self, chroot_dir, build_prefix):
-        pass
+    def copy_dependent_debs(self, chroot_dir):
+        deb_dir = os.path.join(chroot_dir, "opt", "client_debs")
+        chroot_deb_dir = os.path.join("/",
+                                      "chroot", 
+                                      "precise", 
+                                      "www", 
+                                      "dists", 
+                                      "precise", 
+                                      "neverware", 
+                                      "binary-i386")
+        for deb in os.listdir(deb_dir):
+            (name, ext) = os.path.splitext(deb)
+            if ext == ".deb":
+                shutil.copy(os.path.join(deb_dir, deb), chroot_deb_dir)
+
+    def build_neverware_virt_viewer_deb(self, chroot_dir):
+        version = "0.0.0"
+        apt_name = "neverware-virt-viewer"
+        prev_dir = os.path.abspath(os.curdir)
+        os.chdir(os.path.join(self._curdir, "apt_configs", apt_name.replace("-", "_")))
+        temp_dir = tempfile.mkdtemp()
+        build_dir_name = "{0}-{1}".format(apt_name, version)
+        build_dir = os.path.join(temp_dir, build_dir_name)
+        os.mkdir(build_dir)
+        print("Building deb file at {0}".format(build_dir))
+        with open(os.path.join(build_dir, "debian-binary"), 'w') as f:
+            f.write("2.0")
+        debian_dir_name = "DEBIAN"
+        debian_dir = os.path.join(build_dir, debian_dir_name)
+        os.mkdir(debian_dir)
+        with open(os.path.join(self._resources_dir, "scripts", "dependencies.list")) as f:
+            dependencies = f.read()
+        dependencies = dependencies.replace(" ", ", ").rstrip()
+        with open(os.path.join(debian_dir, "control"), 'w') as f:
+            f.write("Package: {0}\n".format("neverware-virt-viewer"))
+            f.write("Version: {0}\n".format("0.0-1"))
+            f.write("Section: base\n")
+            f.write("Priority: optional\n")
+            f.write("Architecture: all\n")
+            f.write("Depends: {0}\n".format(dependencies))
+            f.write("Maintainer: neverware <it@neverware.com>\n")
+            f.write("Description: Neverare's flavor of virt-viewer.\n")
+        # This will copy files like postint, prerm, etc
+        for file in os.listdir(os.curdir):
+            shutil.copy2(file, debian_dir)
+        executables = ["postinst", "postrm", "preinst", "prerm"]
+        permission_bits = 0775
+        for exe in executables:
+            path = os.path.join(debian_dir, exe)
+            if os.path.exists(path):
+                os.chmod(path, permission_bits)
+
+        # We do this crazy tar copy so we dont need to deal with the annoyingness of 
+        # copying files/dir/parent dirs.
+        compression = "bz2"
+        with tempfile.NamedTemporaryFile(suffix=".tar.{0}".format(compression)) as f:
+            arc_name = f.name
+        os.chdir(os.path.join(self._curdir, chroot_dir))
+        with tarfile.open(arc_name, "w:{0}".format(compression)) as f:
+            # TODO: We allow our build scripts to implement their own prefix, but we assume its
+            # at a specific dir.  This is bad, and we should change it.
+            f.add(os.path.join("opt", "neverware"))
+        with tarfile.open(arc_name, "r:{0}".format(compression)) as f:
+            f.extractall(build_dir)
+        os.unlink(arc_name)
+
+        # Now we bundle up the deb build directory
+        os.chdir(os.path.join(build_dir, os.pardir))
+        built_tar = "{0}.tar.{1}".format(build_dir_name, compression)
+        with tarfile.open(built_tar, "w:{0}".format(compression)) as f:
+            f.add(os.path.basename(build_dir))
+
+        precise_chroot = os.path.join("/", "chroot", "precise")
+        tar_dst = os.path.join(precise_chroot, "www", os.path.basename(built_tar))
+        print("Moving {0} to {1}".format(built_tar, tar_dst))
+        shutil.move(built_tar, tar_dst)
+        cmd = ["chroot",
+               precise_chroot,
+               "/chroot_runner",
+               os.path.basename(built_tar),
+               os.path.basename(build_dir)]
+        subprocess.check_call(cmd)
+ 
 
 if __name__ == "__main__":
     import argparse
@@ -204,6 +288,10 @@ if __name__ == "__main__":
         default=None,
         dest="build_prefix")
     parser.add_argument(
+        "--copy-dependent-debs",
+        action="store_true",
+        dest="copy_dependent_debs") 
+    parser.add_argument(
         "--build-all",
         action="store_true",
         dest="build_all")
@@ -214,14 +302,16 @@ if __name__ == "__main__":
         parser.add_argument(
             "--{0}".format(component.replace("_", "-")),
             action="store_true",
-            dest=component)
+            dest=component,
+            help="Package {0}".format(component))
         # Initialize the options field
         options[component] = False
     args = parser.parse_args()
     root_user = "root"
 
     # Builder object holds all functions to build with
-    builder = Builder()
+    builder = Builder(args.build_prefix)
+    chroot_dir = builder.get_chroot_name("build")
     if getpass.getuser() != root_user:
         print("Sorry, this script needs to be run as root :(")
         sys.exit(1)
@@ -233,6 +323,9 @@ if __name__ == "__main__":
     if getattr(args, "make_chroot_jail", False):
         builder.make_chroot_jail()
 
+    if getattr(args, "copy_dependent_debs", True):
+        builder.copy_dependent_debs(chroot_dir)
+
     if getattr(args, "build_all", False):
         for key in options:
             options[key] = True
@@ -240,9 +333,8 @@ if __name__ == "__main__":
         for component in components:
             if getattr(args, component, False):
                 options[component] = True
-    chroot_dir = builder.get_chroot_name("build")
     for component in components:
         if options[component]:
             print("Executing {0}".format(component))
             func = getattr(builder, "build_{0}".format(component))
-            func(chroot_dir, args.build_prefix)
+            func(chroot_dir)
