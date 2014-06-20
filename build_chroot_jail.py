@@ -262,9 +262,10 @@ class Builder(object):
         shutil.move(built_tar, tar_dst)
         cmd = ["chroot",
                precise_chroot,
-               "/chroot_runner",
+               "./neverware_deb_packager.py",
+               "--tar-name",
                os.path.basename(built_tar),
-               os.path.basename(build_dir)]
+              ]
         subprocess.check_call(cmd)
  
 
