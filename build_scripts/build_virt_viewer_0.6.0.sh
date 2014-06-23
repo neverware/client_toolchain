@@ -2,7 +2,7 @@
 
 if [ -z $1 ]
 then
-    PREFIX=/opt/neverware
+    PREFIX=/opt/neverware/virt_viewer
     echo No prefix provided
 else
     PREFIX=$1

@@ -200,7 +200,7 @@ class Builder(object):
                 shutil.copy(os.path.join(deb_dir, deb), chroot_deb_dir)
 
     def build_neverware_virt_viewer_deb(self, chroot_dir):
-        version = "0.0.0"
+        version = "0.0-1"
         apt_name = "neverware-virt-viewer"
         prev_dir = os.path.abspath(os.curdir)
         os.chdir(os.path.join(self._curdir, "apt_configs", apt_name.replace("-", "_")))
@@ -209,8 +209,6 @@ class Builder(object):
         build_dir = os.path.join(temp_dir, build_dir_name)
         os.mkdir(build_dir)
         print("Building deb file at {0}".format(build_dir))
-        with open(os.path.join(build_dir, "debian-binary"), 'w') as f:
-            f.write("2.0")
         debian_dir_name = "DEBIAN"
         debian_dir = os.path.join(build_dir, debian_dir_name)
         os.mkdir(debian_dir)
@@ -219,10 +217,10 @@ class Builder(object):
         dependencies = dependencies.replace(" ", ", ").rstrip()
         with open(os.path.join(debian_dir, "control"), 'w') as f:
             f.write("Package: {0}\n".format("neverware-virt-viewer"))
-            f.write("Version: {0}\n".format("0.0-1"))
+            f.write("Version: {0}\n".format(version))
             f.write("Section: base\n")
             f.write("Priority: optional\n")
-            f.write("Architecture: all\n")
+            f.write("Architecture: i386\n")
             f.write("Depends: {0}\n".format(dependencies))
             f.write("Maintainer: neverware <it@neverware.com>\n")
             f.write("Description: Neverare's flavor of virt-viewer.\n")
