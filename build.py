@@ -4,15 +4,21 @@
 Build script that attempts to build the requires debs for a juiceclient machine.
 """
 
+import ConfigParser
 import getpass
+import hashlib
 import os
 import platform
+import re
 import shutil
+import signal
 import stat
 import subprocess
 import sys
 import tarfile
 import tempfile
+import time
+
 
 class Builder(object):
     """
@@ -30,6 +36,10 @@ class Builder(object):
         # The *_name is the relative name of the dir
         self._resources_dir_name = "resources"
         self._build_scripts_dir_name = "build_scripts"
+
+    @property
+    def _client_deb_file(self):
+        return os.path.join(self._curdir, "client_debs.tar.bz2")
 
     @property
     def _resources_dir(self):
@@ -175,17 +185,64 @@ class Builder(object):
             cmd.append(self._prefix)
         subprocess.check_call(cmd)
 
-    def build_client_debs(self, chroot_dir):
-        self._make_chroot_if_necessary(chroot_dir)
-        get_debs = os.path.join("/", self._resources_dir_name, "scripts", "download_client_debs.sh")
-        download_list = os.path.join("/", self._resources_dir_name, "downloads.list")
-        cmd = ["chroot", chroot_dir, get_debs, download_list]
-        if self._prefix != None:
-            cmd.append(self._prefix)
-        subprocess.check_call(cmd)
+    def _calc_sha1(self, path):
+        """
+        Reads a file one chunk at a time, until we have a checksum for the entire file
+        """
+        print("Calculating checksum.  This could take a while")
+        sum = hashlib.sha1()
+        size = 2**20
+        with open(path) as f:
+            data = f.read(size)
+            while data != "":
+                sum.update(data)
+                data = f.read(size)
+        return sum.hexdigest()
 
-    def copy_dependent_debs(self, chroot_dir):
-        deb_dir = os.path.join(chroot_dir, "opt", "client_debs")
+    def _download_client_deb_tarball(self, 
+                                     url="https://s3.amazonaws.com/Juicebox/"
+                                         "AptServerFiles/client_debs.tar.bz2"):
+        ssh_cmd = ["ssh", "porthole", "-f", "-N", "-D", "8888"]
+        port_forward = subprocess.Popen(ssh_cmd)
+        # This will wait until port forwarding forks and is definitely working
+        while port_forward.poll() == None:
+            time.sleep(.1)
+        try:
+            download_cmd = ["proxychains4", "wget", "-O", self._client_deb_file, url]
+            subprocess.check_call(download_cmd)
+        finally:
+            pids = subprocess.check_output(["ps", "ax", "-o", "pid", "-o", "command"])
+            regex = "(\d+) {0}".format(" ".join(ssh_cmd))
+            match = re.search(regex, pids)
+            if match:
+                pid = int(match.group(1))
+                os.kill(pid, signal.SIGTERM)
+            else:
+                print("We couldn't kill the ssh port forward process...")
+
+    def build_client_debs(self, chroot_dir):
+        client_deb = "client_deb"
+        client_deb_tarball = "{0}.tar.bz2".format(client_deb)
+        config_parser = ConfigParser.ConfigParser()
+        checksum_cfg = "checksums.cfg"
+        with open(checksum_cfg) as f:
+            config_parser.readfp(f)
+        def update_checksum():
+            new_checksum = self._calc_sha1(self._client_deb_file)
+            config_parser.set("checksums", client_deb, new_checksum)
+            with open(checksum_cfg, 'w') as f:
+                config_parser.write(f)
+        if not os.path.exists(self._client_deb_file):
+            self._download_client_deb_tarball()
+            update_checksum()
+        else:
+            got_checksum = self._calc_sha1(self._client_deb_file)
+            expected_checksum = config_parser.get("checksums", client_deb)
+            if got_checksum != expected_checksum:
+                print("Checksums {0} (expected) and {1} (got) don't match, downloading {2}".format(
+                      expected_checksum, got_checksum, client_deb_tarball))
+                self._download_client_deb_tarball()
+                update_checksum()
         chroot_deb_dir = os.path.join("/",
                                       "chroot", 
                                       "precise", 
@@ -194,6 +251,37 @@ class Builder(object):
                                       "precise", 
                                       "neverware", 
                                       "binary-i386")
+        print("Extracting all tarfiles")
+        with tarfile.open(self._client_deb_file, "r:*") as f:
+            f.extractall(path=chroot_deb_dir)
+        
+
+    def package_client_debs(self, chroot_dir):
+        self._make_chroot_if_necessary(chroot_dir)
+        prefix = os.path.join(chroot_dir, "opt", "client_debs")
+        get_debs = os.path.join("/", self._resources_dir_name, "scripts", "download_client_debs.sh")
+        download_list = os.path.join("/", self._resources_dir_name, "downloads.list")
+        cmd = ["chroot", chroot_dir, get_debs, download_list]
+        if self._prefix != None:
+            cmd.append(self._prefix)
+        try:
+            raise subprocess.CalledProcessError('a', 'b')
+            subprocess.check_call(cmd)
+        except subprocess.CalledProcessError as e:
+            print("Failed to wget all packages, tarring up what we can")
+        cur_dir = os.path.abspath(os.curdir)
+        os.chdir(prefix)
+        archive_name = "client_debs.tar.bz2"
+        deb_ext = ".deb"
+        with tarfile.open(archive_name, "w:bz2") as f:
+            for file in os.listdir("."):
+                if file.endswith(deb_ext):
+                    f.add(file)
+        print("Packaged all client debs to: {0}".format(os.path.join(prefix, archive_name)))
+        os.chdir(cur_dir)
+
+    def _copy_debs(self, chroot_dir):
+        deb_dir = os.path.join(chroot_dir, "opt", "client_debs")
         for deb in os.listdir(deb_dir):
             (name, ext) = os.path.splitext(deb)
             if ext == ".deb":
@@ -275,25 +363,30 @@ if __name__ == "__main__":
     parser.add_argument(
         "--generate-debootstrap-rpm",
         action="store_true",
-        dest="generate_debootstrap_rpm")
+        dest="generate_debootstrap_rpm",
+        help="Generate the debootstrap RPM to install on redhat machines")
     parser.add_argument(
         "--make-chroot-jail",
         action="store_true",
-        dest="make_chroot_jail")
+        dest="make_chroot_jail",
+        help="Creates a chroot jail, similar to the one we use to compile the client toolchain.")
     parser.add_argument(
         "--build-prefix",
         action="store",
         type=str,
         default=None,
-        dest="build_prefix")
+        dest="build_prefix",
+        help="The prefix the different components will be installed to.")
     parser.add_argument(
-        "--copy-dependent-debs",
+        "--package-client-debs",
         action="store_true",
-        dest="copy_dependent_debs") 
+        dest="package_client_debs",
+        help="Grab all the required debs from external sources and wrap them up in a tarball")
     parser.add_argument(
         "--build-all",
         action="store_true",
-        dest="build_all")
+        dest="build_all",
+        help="Build all required components")
     # We machine generate all of these params
     components = ["spice_gtk", "virt_viewer", "client_debs", "neverware_virt_viewer_deb"]
     options = {}
@@ -322,8 +415,8 @@ if __name__ == "__main__":
     if getattr(args, "make_chroot_jail", False):
         builder.make_chroot_jail()
 
-    if getattr(args, "copy_dependent_debs", True):
-        builder.copy_dependent_debs(chroot_dir)
+    if getattr(args, "package_client_debs", False):
+        builder.package_client_debs(chroot_dir)
 
     if getattr(args, "build_all", False):
         for key in options:
