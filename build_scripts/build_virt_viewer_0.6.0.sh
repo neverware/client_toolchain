@@ -18,11 +18,16 @@ apt-get --assume-yes --force-yes install git libspice-protocol-dev libtool
 BRANCH=2.3RC
 DEST=virt-viewer
 
-git clone https://github.com/neverware/virt-viewer -b ${BRANCH} ${DEST}
-
-cd ${DEST}
-
-git fetch
+if [ ! -d ${DEST} ]
+then
+    git clone https://github.com/neverware/virt-viewer -b ${BRANCH} ${DEST}
+    cd ${DEST}
+else
+    cd ${DEST}
+    git fetch
+    git checkout ${BRANCH}
+    git pull
+fi
 
 # We build libspice with gtk2.0
 PKG_CONFIG_PATH=${PREFIX}/lib/pkgconfig ./autogen.sh --with-gtk=2.0 --prefix=${PREFIX}
