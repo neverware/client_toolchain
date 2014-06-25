@@ -202,23 +202,8 @@ class Builder(object):
     def _download_client_deb_tarball(self, 
                                      url="https://s3.amazonaws.com/Juicebox/"
                                          "AptServerFiles/client_debs.tar.bz2"):
-        ssh_cmd = ["ssh", "porthole", "-f", "-N", "-D", "8888"]
-        port_forward = subprocess.Popen(ssh_cmd)
-        # This will wait until port forwarding forks and is definitely working
-        while port_forward.poll() == None:
-            time.sleep(.1)
-        try:
-            download_cmd = ["proxychains4", "wget", "-O", self._client_deb_file, url]
-            subprocess.check_call(download_cmd)
-        finally:
-            pids = subprocess.check_output(["ps", "ax", "-o", "pid", "-o", "command"])
-            regex = "(\d+) {0}".format(" ".join(ssh_cmd))
-            match = re.search(regex, pids)
-            if match:
-                pid = int(match.group(1))
-                os.kill(pid, signal.SIGTERM)
-            else:
-                print("We couldn't kill the ssh port forward process...")
+        download_cmd = ["wget", "-O", self._client_deb_file, url]
+        subprocess.check_call(download_cmd)
 
     def build_client_debs(self, chroot_dir):
         client_deb = "client_deb"
