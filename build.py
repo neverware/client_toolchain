@@ -29,13 +29,14 @@ class Builder(object):
         * spice-gtk
     Its probably a good idea to roll juiceclient into here as well.
     """
-    def __init__(self, prefix):
+    def __init__(self, prefix, version):
         # This will get the directory this file resides in
         self._prefix = prefix
         self._curdir = os.path.abspath(os.path.dirname(__file__))
         # The *_name is the relative name of the dir
         self._resources_dir_name = "resources"
         self._build_scripts_dir_name = "build_scripts"
+        self._version = version
 
     @property
     def _client_deb_file(self):
@@ -273,7 +274,7 @@ class Builder(object):
                 shutil.copy(os.path.join(deb_dir, deb), chroot_deb_dir)
 
     def build_neverware_virt_viewer_deb(self, chroot_dir):
-        version = "0.0-1"
+        version = self._version
         apt_name = "neverware-virt-viewer"
         prev_dir = os.path.abspath(os.curdir)
         os.chdir(os.path.join(self._curdir, "apt_configs", apt_name.replace("-", "_")))
@@ -372,6 +373,13 @@ if __name__ == "__main__":
         action="store_true",
         dest="build_all",
         help="Build all required components")
+    parser.add_argument(
+        "--deb-version",
+        action="store",
+        type=str,
+        default="v0.0.1",
+        dest="deb_version",
+        help="The version of the deb we are going to produce")
     # We machine generate all of these params
     components = ["spice_gtk", "virt_viewer", "client_debs", "neverware_virt_viewer_deb"]
     options = {}
@@ -387,7 +395,13 @@ if __name__ == "__main__":
     root_user = "root"
 
     # Builder object holds all functions to build with
-    builder = Builder(args.build_prefix)
+    version_regex = "v(\d*)\.(\d*).(\d*)"
+    match = re.match(version_regex, args.deb_version)
+    if match == None:
+        raise AttributeError("Bad version number {0}".format(args.deb_version))
+    else:
+        version = "{0}.{1}-{2}".format(match.group(1), match.group(2), match.group(3))
+    builder = Builder(args.build_prefix, version)
     chroot_dir = builder.get_chroot_name("build")
     if getpass.getuser() != root_user:
         print("Sorry, this script needs to be run as root :(")
