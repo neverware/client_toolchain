@@ -139,6 +139,20 @@ class Builder(object):
         self._concatenate_file(os.path.join(self._resources_dir, sources_file),
                                os.path.join(chroot_dir, sources_file))
 
+        # the chroot's /sbin/run must be stubbed to avoid post-install logic
+        # (such as dbus's) from breaking due to limits of chroot jail
+        STARTFILE_PATH = "/root/client_toolchain/build_chroot/sbin/start"
+        file_size = os.stat(STARTFILE_PATH).st_size
+        if file_size > 2:
+            # then the file has contents other than a newline and must be
+            # stubbed
+            shutil.move(STARTFILE_PATH, STARTFILE_PATH + ".bak")
+            with open(STARTFILE_PATH, "w") as f:
+                f.write("\n")
+            # make it executable
+            cur_bits = os.stat(STARTFILE_PATH).st_mode
+            os.chmod(STARTFILE_PATH, cur_bits | stat.S_IEXEC)
+
         # Now we apt-get update
         # This is from the root dir, since we'll execute it inside the chroot jail
         apt_update_script = os.path.join("/", self._resources_dir_name, "scripts", "update_apt.sh")
