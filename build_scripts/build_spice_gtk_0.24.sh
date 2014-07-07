@@ -38,6 +38,6 @@ cd ${SPICE_GTK}
 apt-get install --assume-yes --force-yes pkg-config libspice-client-gtk-2.0-dev intltool libpixman-1-dev libssl-dev libgtk2.0-dev libsoup2.4-dev pulseaudio libpulse-dev libjpeg-dev libusb-1.0-0-dev libusbredirhost-dev
 
 # x11 and gtk2.0 are supposed to give some performance boosts
-./configure --enable-usbredir --with-x11 --with-gtk=2.0 --prefix=${PREFIX}
+./configure --enable-usbredir --with-gtk=2.0 --prefix=${PREFIX}
 make
 make install
