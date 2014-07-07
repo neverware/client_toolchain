@@ -143,6 +143,7 @@ class Builder(object):
         # (such as dbus's) from breaking due to limits of chroot jail
         STARTFILE_PATH = "/root/client_toolchain/build_chroot/sbin/start"
         file_size = os.stat(STARTFILE_PATH).st_size
+        # largest empty file made via the method below will be 2: \n, EOF 
         if file_size > 2:
             # then the file has contents other than a newline and must be
             # stubbed
