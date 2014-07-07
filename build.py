@@ -142,11 +142,9 @@ class Builder(object):
         # the chroot's /sbin/run must be stubbed to avoid post-install logic
         # (such as dbus's) from breaking due to limits of chroot jail
         STARTFILE_PATH = "/root/client_toolchain/build_chroot/sbin/start"
-        file_size = os.stat(STARTFILE_PATH).st_size
         # largest empty file made via the method below will be 2: \n, EOF 
-        if file_size > 2:
-            # then the file has contents other than a newline and must be
-            # stubbed
+        if not os.path.exists(STARTFILE_PATH + ".bak"): 
+            # then the original is in place and should be stubbed
             shutil.move(STARTFILE_PATH, STARTFILE_PATH + ".bak")
             with open(STARTFILE_PATH, "w") as f:
                 f.write("\n")
