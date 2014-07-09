@@ -117,7 +117,8 @@ class Builder(object):
         try:
             subprocess.check_call(["which", debootstrap])
         except Exception as e:
-            raise RuntimeError("{0} is required to make chroot jail".format(debootstrap))
+            deb_path = os.path.join(self._resources_dir, "rpms", "debootstrap-1.0.53ubuntu0.2-2.noarch.rpm")
+            subprocess.check_call(["yum", "install", "-y", deb_path])
         # Next we build the actual chroot jail
         arch = "i386"
         suite = "saucy"
