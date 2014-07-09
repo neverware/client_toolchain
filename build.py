@@ -158,7 +158,9 @@ class Builder(object):
         chroot_name = ["chroot"]
         if isinstance(prefix, (str, bytes, unicode)):
             chroot_name.insert(0, prefix)
-        return "_".join(chroot_name)
+        # TODO: Parameterize this
+        chroot_dir = os.path.abspath(os.path.dirname(__file__))
+        return os.path.join(chroot_dir, "_".join(chroot_name))
 
     def _make_chroot_if_necessary(self, chroot_dir):
         if not os.path.isdir(chroot_dir):
