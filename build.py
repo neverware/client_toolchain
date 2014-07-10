@@ -448,6 +448,8 @@ if __name__ == "__main__":
         for component in components:
             if getattr(args, component, False):
                 options[component] = True
+    import rpdb
+    rpdb.set_trace()
     for component in components:
         if options[component]:
             print("Executing {0}".format(component))
