@@ -226,7 +226,7 @@ class Builder(object):
         client_deb = "client_deb"
         client_deb_tarball = "{0}.tar.bz2".format(client_deb)
         config_parser = ConfigParser.ConfigParser()
-        checksum_cfg = "checksums.cfg"
+        checksum_cfg = os.path.join(self._curdir, "checksums.cfg")
         with open(checksum_cfg) as f:
             config_parser.readfp(f)
         def update_checksum():
