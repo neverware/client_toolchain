@@ -348,9 +348,17 @@ class Builder(object):
         tar_dst = os.path.join(precise_chroot, "www", os.path.basename(built_tar))
         print("Moving {0} to {1}".format(built_tar, tar_dst))
         shutil.move(built_tar, tar_dst)
+        packager_script = "neverware_deb_packager.py"
+        dst = os.path.join(precise_chroot, packager_script)
+        if not os.path.exists(dst):
+            # TODO: :''''''''(
+            # FIX THIS IMMEDIATELY
+            shutil.move(os.path.join("/home/neverware/Juicebox/juiceclient", 
+                                     packager_script), 
+                        precise_chroot)
         cmd = ["chroot",
                precise_chroot,
-               "./neverware_deb_packager.py",
+               "./{0}".format(packager_script),
                "--tar-name",
                os.path.basename(built_tar),
               ]
