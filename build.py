@@ -353,7 +353,7 @@ class Builder(object):
         if not os.path.exists(dst):
             # TODO: :''''''''(
             # FIX THIS IMMEDIATELY
-            shutil.move(os.path.join("/home/neverware/Juicebox/juiceclient", 
+            shutil.copy2(os.path.join("/home/neverware/Juicebox/juiceclient", 
                                      packager_script), 
                         precise_chroot)
         cmd = ["chroot",
