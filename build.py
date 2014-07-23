@@ -122,7 +122,8 @@ class Builder(object):
         # Next we build the actual chroot jail
         arch = "i386"
         suite = "saucy"
-        cmd = [debootstrap, 
+        cmd = ["proxychains4",
+               debootstrap, 
                "--variant=buildd", 
                "--arch={0}".format(arch), 
                suite, 
