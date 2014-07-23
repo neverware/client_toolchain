@@ -67,7 +67,7 @@ class Builder(object):
         start_dir = os.path.abspath(os.path.curdir)
         build_dir = tempfile.mkdtemp()
         os.chdir(build_dir)
-        get_deb = ["apt-get", "download", "debootstrap"]
+        get_deb = ["proxychains4", "apt-get", "download", "debootstrap"]
         subprocess.check_call(get_deb)
         # There should only be one thing in this temp dir
         deb_pkg = os.listdir(build_dir)[0]   
@@ -77,7 +77,7 @@ class Builder(object):
             subprocess.check_call(check_alien)
         except subprocess.CalledProcessError as e:
             print("{0} is not detected, installing".format(alien_pkg))
-            install_alien = ["apt-get", "install", alien_pkg]
+            install_alien = ["proxychains4", "apt-get", "install", alien_pkg]
             subprocess.check_call(install_alien)
         else:
             print("Alien detected, proceeding")
@@ -219,7 +219,7 @@ class Builder(object):
     def _download_client_deb_tarball(self, 
                                      url="https://s3.amazonaws.com/Juicebox/"
                                          "AptServerFiles/client_debs.tar.bz2"):
-        download_cmd = ["wget", "-O", self._client_deb_file, url]
+        download_cmd = ["proxychains4", "wget", "-O", self._client_deb_file, url]
         subprocess.check_call(download_cmd)
 
     def build_client_debs(self, chroot_dir):

@@ -13,7 +13,7 @@ BUILD_DIR=/build
 mkdir ${BUILD_DIR}
 cd ${BUILD_DIR}
 
-apt-get --assume-yes --force-yes install git libspice-protocol-dev libtool
+proxychains4 apt-get --assume-yes --force-yes install git libspice-protocol-dev libtool
 
 BRANCH=2.3RC
 DEST=virt-viewer
