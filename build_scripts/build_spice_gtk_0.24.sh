@@ -27,7 +27,7 @@ then
 else
     echo No spice-gtk specified, getting from remote
     URL=http://www.spice-space.org/download/gtk/
-    proxychains4 wget -O ${BUILD_DIR} ${URL}${SPICE_GTK}${TAR_EXT}
+    wget -O ${BUILD_DIR} ${URL}${SPICE_GTK}${TAR_EXT}
 fi
 
 # Compile spice gtk
@@ -35,7 +35,7 @@ tar -xf ${BIULD_DIR}${EXPECT_FILE}
 cd ${SPICE_GTK}
 
 # Get all dependencies
-proxychains4 apt-get install --assume-yes --force-yes pkg-config libspice-client-gtk-2.0-dev intltool libpixman-1-dev libssl-dev libgtk2.0-dev libsoup2.4-dev pulseaudio libpulse-dev libjpeg-dev libusb-1.0-0-dev libusbredirhost-dev
+apt-get install --assume-yes --force-yes pkg-config libspice-client-gtk-2.0-dev intltool libpixman-1-dev libssl-dev libgtk2.0-dev libsoup2.4-dev pulseaudio libpulse-dev libjpeg-dev libusb-1.0-0-dev libusbredirhost-dev
 
 # x11 and gtk2.0 are supposed to give some performance boosts
 ./configure --enable-usbredir --with-gtk=2.0 --prefix=${PREFIX}

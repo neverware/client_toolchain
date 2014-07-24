@@ -21,4 +21,4 @@ mkdir -p ${PREFIX}
 cp ${DOWNLOAD_FILE} ${PREFIX}
 cd ${PREFIX}
 
-proxychains4 wget --input-file ${DOWNLOAD_FILE}
+proxychains wget --input-file ${DOWNLOAD_FILE}

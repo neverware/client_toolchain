@@ -19,7 +19,8 @@ import tarfile
 import tempfile
 import time
 
-proxychains = "proxychains4"
+proxychains_rpm = "proxychains4"
+proxychains_deb = "proxychains"
 
 class Builder(object):
     """
@@ -68,7 +69,7 @@ class Builder(object):
         start_dir = os.path.abspath(os.path.curdir)
         build_dir = tempfile.mkdtemp()
         os.chdir(build_dir)
-        get_deb = [proxychains, "apt-get", "download", "debootstrap"]
+        get_deb = [proxychains_deb, "apt-get", "download", "debootstrap"]
         subprocess.check_call(get_deb)
         # There should only be one thing in this temp dir
         deb_pkg = os.listdir(build_dir)[0]   
@@ -78,7 +79,7 @@ class Builder(object):
             subprocess.check_call(check_alien)
         except subprocess.CalledProcessError as e:
             print("{0} is not detected, installing".format(alien_pkg))
-            install_alien = [proxychains, "apt-get", "install", alien_pkg]
+            install_alien = [proxychains_deb, "apt-get", "install", alien_pkg]
             subprocess.check_call(install_alien)
         else:
             print("Alien detected, proceeding")
@@ -123,7 +124,7 @@ class Builder(object):
         # Next we build the actual chroot jail
         arch = "i386"
         suite = "saucy"
-        cmd = [proxychains,
+        cmd = [proxychains_rpm,
                debootstrap, 
                "--variant=buildd", 
                "--arch={0}".format(arch), 
@@ -131,12 +132,14 @@ class Builder(object):
                chroot_dir, 
                "http://archive.ubuntu.com/ubuntu/"]
         subprocess.check_call(cmd)
+      
         # Now we copy over all the resources
         for dir in [self._resources_dir, self._build_scripts_dir]:
             basename = os.path.basename(dir)
             dest_dir = os.path.join(chroot_dir, basename)
             print("Copying {0} to {1}".format(dir, dest_dir))
             shutil.copytree(dir, dest_dir)
+
         # Now we update the sources
         sources_file = os.path.join("etc", "apt", "sources.list")
         self._concatenate_file(os.path.join(self._resources_dir, sources_file),
@@ -159,6 +162,10 @@ class Builder(object):
         # This is from the root dir, since we'll execute it inside the chroot jail
         apt_update_script = os.path.join("/", self._resources_dir_name, "scripts", "update_apt.sh")
         subprocess.check_call(["chroot", chroot_dir, apt_update_script])
+
+        # Now make pull down debs we host on AWS and install proxychains
+        install_proxychains_script = os.path.join("/", self._resources_dir_name, "scripts", "install_proxychains.sh")
+        subprocess.check_call(["chroot", chroot_dir, install_proxychains_script])
 
     def _concatenate_file(self, src, dst):
         """
@@ -221,7 +228,7 @@ class Builder(object):
     def _download_client_deb_tarball(self, 
                                      url="https://s3.amazonaws.com/Juicebox/"
                                          "AptServerFiles/client_debs.tar.bz2"):
-        download_cmd = [proxychains, "wget", "-O", self._client_deb_file, url]
+        download_cmd = ["wget", "-O", self._client_deb_file, url]
         subprocess.check_call(download_cmd)
 
     def build_client_debs(self, chroot_dir):
@@ -372,7 +379,7 @@ def _check_ssh_tunnel():
 
     if connections == 0:
         ssh_cmd = 'ssh porthole -f -N -D 8888'
-        subprocess.call(ssh_cmd, shell=True)
+        ret = subprocess.call(ssh_cmd, shell=True)
         if ret != 0:
             sys.stderr.write('Error: Could not connect to porthole.\n')
             sys.exit(1)
