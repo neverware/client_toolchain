@@ -19,7 +19,6 @@ import tarfile
 import tempfile
 import time
 
-
 class Builder(object):
     """
     Object that contains all the necessary functions to build the client debs
@@ -105,7 +104,7 @@ class Builder(object):
         else:
             return True
 
-    def make_chroot_jail(self, chroot_dir="chroot"):
+    def make_chroot_jail(self, chroot_dir="build_chroot"):
         """
         Uses debootstrap to create a chroot jail.
 
@@ -365,8 +364,18 @@ class Builder(object):
               ]
         subprocess.check_call(cmd)
  
+def _check_ssh_tunnel()
+    connections = subprocess.check_output("""ps aux | grep ssh | grep "D 8888" | grep -v grep | wc -l""", shell=True)
+    if connections == 0:
+        ret = subprocess.call('ssh porthole -f -N -D 8888', shell=True)
+        if ret != 0:
+            sys.stderr.write('Error: Could not connect to porthole.\n')
+            sys.exit(1)
 
 if __name__ == "__main__":
+    # before we begin, check that there is an ssh tunnel to porthole
+    _check_ssh_tunnel()
+
     import argparse
     parser = argparse.ArgumentParser("Script that attempts to create a chroot "
                                      "jail that can build the various client "
@@ -429,7 +438,7 @@ if __name__ == "__main__":
     builder = Builder(args.build_prefix, version)
     chroot_dir = builder.get_chroot_name("build")
     if getpass.getuser() != root_user:
-        print("Sorry, this script needs to be run as root :(")
+        sys.stderr.write("Sorry, this script needs to be run as root :(")
         sys.exit(1)
 
     if getattr(args, "generate_debootstrap_rpm", False):
