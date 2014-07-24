@@ -19,6 +19,8 @@ import tarfile
 import tempfile
 import time
 
+proxychains = "proxychains4"
+
 class Builder(object):
     """
     Object that contains all the necessary functions to build the client debs
@@ -66,7 +68,7 @@ class Builder(object):
         start_dir = os.path.abspath(os.path.curdir)
         build_dir = tempfile.mkdtemp()
         os.chdir(build_dir)
-        get_deb = ["proxychains4", "apt-get", "download", "debootstrap"]
+        get_deb = [proxychains, "apt-get", "download", "debootstrap"]
         subprocess.check_call(get_deb)
         # There should only be one thing in this temp dir
         deb_pkg = os.listdir(build_dir)[0]   
@@ -76,7 +78,7 @@ class Builder(object):
             subprocess.check_call(check_alien)
         except subprocess.CalledProcessError as e:
             print("{0} is not detected, installing".format(alien_pkg))
-            install_alien = ["proxychains4", "apt-get", "install", alien_pkg]
+            install_alien = [proxychains, "apt-get", "install", alien_pkg]
             subprocess.check_call(install_alien)
         else:
             print("Alien detected, proceeding")
@@ -121,7 +123,7 @@ class Builder(object):
         # Next we build the actual chroot jail
         arch = "i386"
         suite = "saucy"
-        cmd = ["proxychains4",
+        cmd = [proxychains,
                debootstrap, 
                "--variant=buildd", 
                "--arch={0}".format(arch), 
@@ -219,7 +221,7 @@ class Builder(object):
     def _download_client_deb_tarball(self, 
                                      url="https://s3.amazonaws.com/Juicebox/"
                                          "AptServerFiles/client_debs.tar.bz2"):
-        download_cmd = ["proxychains4", "wget", "-O", self._client_deb_file, url]
+        download_cmd = [proxychains, "wget", "-O", self._client_deb_file, url]
         subprocess.check_call(download_cmd)
 
     def build_client_debs(self, chroot_dir):
@@ -364,7 +366,7 @@ class Builder(object):
               ]
         subprocess.check_call(cmd)
  
-def _check_ssh_tunnel()
+def _check_ssh_tunnel():
     connections = subprocess.check_output("""ps aux | grep ssh | grep "D 8888" | grep -v grep | wc -l""", shell=True)
     if connections == 0:
         ret = subprocess.call('ssh porthole -f -N -D 8888', shell=True)

@@ -17,6 +17,6 @@ echo Using dest file${DOWNLOAD_FILE}
 PKG_LIST=`cat dependencies.list`
 echo $PKG_LIST
 
-apt-get update
+proxychains4 apt-get update
 
-apt-get --print-uris --yes install ${PKG_LIST} | grep ^\' | cut -d\' -f2 > ${DOWNLOAD_FILE}
+proxychains4 apt-get --print-uris --yes install ${PKG_LIST} | grep ^\' | cut -d\' -f2 > ${DOWNLOAD_FILE}

@@ -111,3 +111,16 @@ http://us.archive.ubuntu.com/ubuntu/pool/main/p/pulseaudio/pulseaudio-utils_4.0-
 http://us.archive.ubuntu.com/ubuntu/pool/main/p/pulseaudio/pulseaudio-module-x11_4.0-0ubuntu6_i386.deb
 http://us.archive.ubuntu.com/ubuntu/pool/main/r/rtkit/rtkit_0.10-2ubuntu1_i386.deb
 http://us.archive.ubuntu.com/ubuntu/pool/universe/s/sl/sl_3.03-17_i386.deb
+http://us.archive.ubuntu.com/ubuntu/pool/universe/p/proxychains/libproxychains3_3.1-6_i386.deb
+http://us.archive.ubuntu.com/ubuntu/pool/main/b/bind9/libisc95_9.9.3.dfsg.P2-4ubuntu1.1_i386.deb
+http://us.archive.ubuntu.com/ubuntu/pool/main/b/bind9/libdns99_9.9.3.dfsg.P2-4ubuntu1.1_i386.deb
+http://us.archive.ubuntu.com/ubuntu/pool/main/b/bind9/libisccc90_9.9.3.dfsg.P2-4ubuntu1.1_i386.deb
+http://us.archive.ubuntu.com/ubuntu/pool/main/b/bind9/libisccfg90_9.9.3.dfsg.P2-4ubuntu1.1_i386.deb
+http://us.archive.ubuntu.com/ubuntu/pool/main/b/bind9/libbind9-90_9.9.3.dfsg.P2-4ubuntu1.1_i386.deb
+http://us.archive.ubuntu.com/ubuntu/pool/main/b/bind9/liblwres90_9.9.3.dfsg.P2-4ubuntu1.1_i386.deb
+http://us.archive.ubuntu.com/ubuntu/pool/main/b/bind9/bind9-host_9.9.3.dfsg.P2-4ubuntu1.1_i386.deb
+http://us.archive.ubuntu.com/ubuntu/pool/main/b/bind9/dnsutils_9.9.3.dfsg.P2-4ubuntu1.1_i386.deb
+http://us.archive.ubuntu.com/ubuntu/pool/universe/p/proxychains/proxychains_3.1-6_all.deb
+http://archive.ubuntu.com/ubuntu/pool/main/g/geoip-database/geoip-database_20130813-1_all.deb
+http://archive.ubuntu.com/ubuntu/pool/main/g/geoip/libgeoip1_1.5.1-1ubuntu1_i386.deb
+
