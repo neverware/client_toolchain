@@ -367,9 +367,12 @@ class Builder(object):
         subprocess.check_call(cmd)
  
 def _check_ssh_tunnel():
-    connections = subprocess.check_output("""ps aux | grep ssh | grep "D 8888" | grep -v grep | wc -l""", shell=True)
+    grep_cmd = """ps aux | grep ssh | grep "D 8888" | grep -v grep | wc -l"""
+    connections = int(subprocess.check_output(grep_cmd, shell=True))
+
     if connections == 0:
-        ret = subprocess.call('ssh porthole -f -N -D 8888', shell=True)
+        ssh_cmd = 'ssh porthole -f -N -D 8888'
+        subprocess.call(ssh_cmd, shell=True)
         if ret != 0:
             sys.stderr.write('Error: Could not connect to porthole.\n')
             sys.exit(1)
